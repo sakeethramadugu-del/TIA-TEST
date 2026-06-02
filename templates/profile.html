@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profile - ApexVest</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .profile-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    
+    .profile-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .profile-header h1 {
+      color: #F8FAFC;
+      margin-bottom: 8px;
+    }
+    
+    .profile-header p {
+      color: #94A3B8;
+    }
+    
+    .profile-card {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .profile-card h3 {
+      color: #F8FAFC;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+    
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    
+    .profile-stat {
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .profile-stat-label {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-bottom: 4px;
+    }
+    
+    .profile-stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #60A5FA;
+    }
+    
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .profile-info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .profile-info-label {
+      color: #94A3B8;
+    }
+    
+    .profile-info-value {
+      color: #F8FAFC;
+      font-weight: 600;
+    }
+    
+    .streaks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    
+    .streak-item {
+      background: rgba(168, 85, 247, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .streak-label {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-bottom: 4px;
+    }
+    
+    .streak-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #A855F7;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #60A5FA;
+      text-decoration: none;
+    }
+    
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #94A3B8;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <a href="/" class="back-link">← Back to Dashboard</a>
+    
+    <div class="profile-header">
+      <h1>👤 Profile</h1>
+      <p>Your account information and statistics</p>
+    </div>
+    
+    <div id="profileContent" class="loading">
+      Loading profile...
+    </div>
+  </div>
+  
+  <script>
+    async function loadProfile() {
+      try {
+        const response = await fetch('/api/profile');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          renderProfile(data.profile);
+        } else {
+          document.getElementById('profileContent').innerHTML = 
+            '<p style="text-align: center; color: #EF4444;">Failed to load profile</p>';
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        document.getElementById('profileContent').innerHTML = 
+          '<p style="text-align: center; color: #EF4444;">Failed to load profile</p>';
+      }
+    }
+    
+    function renderProfile(profile) {
+      const container = document.getElementById('profileContent');
+      
+      if (!profile || Object.keys(profile).length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #94A3B8;">Profile not available for guests</p>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Account info card
+      html += '<div class="profile-card">';
+      html += '<h3>Account Information</h3>';
+      html += '<div class="profile-info">';
+      html += '<div class="profile-info-item">';
+      html += '<span class="profile-info-label">Username</span>';
+      html += `<span class="profile-info-value">${profile.username}</span>`;
+      html += '</div>';
+      html += '<div class="profile-info-item">';
+      html += '<span class="profile-info-label">Email</span>';
+      html += `<span class="profile-info-value">${profile.email}</span>`;
+      html += '</div>';
+      html += '<div class="profile-info-item">';
+      html += '<span class="profile-info-label">Member Since</span>';
+      html += `<span class="profile-info-value">${new Date(profile.created_at).toLocaleDateString()}</span>`;
+      html += '</div>';
+      html += '</div></div>';
+      
+      // Stats card
+      html += '<div class="profile-card">';
+      html += '<h3>Statistics</h3>';
+      html += '<div class="profile-stats">';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">XP</div>';
+      html += `<div class="profile-stat-value">${profile.xp}</div>`;
+      html += '</div>';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">Level</div>';
+      html += `<div class="profile-stat-value">${profile.level}</div>`;
+      html += '</div>';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">Cash</div>';
+      html += `<div class="profile-stat-value">$${profile.cash.toFixed(2)}</div>`;
+      html += '</div>';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">Achievements</div>';
+      html += `<div class="profile-stat-value">${profile.achievements_count}</div>`;
+      html += '</div>';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">Portfolio Items</div>';
+      html += `<div class="profile-stat-value">${profile.portfolio_count}</div>`;
+      html += '</div>';
+      html += '<div class="profile-stat">';
+      html += '<div class="profile-stat-label">Total Trades</div>';
+      html += `<div class="profile-stat-value">${profile.trade_count}</div>`;
+      html += '</div>';
+      html += '</div></div>';
+      
+      // Streaks card
+      html += '<div class="profile-card">';
+      html += '<h3>Streaks</h3>';
+      html += '<div class="streaks-grid">';
+      
+      const streakNames = {
+        'login': 'Login',
+        'learning': 'Learning',
+        'trading': 'Trading'
+      };
+      
+      Object.keys(profile.streaks).forEach(streakType => {
+        const streak = profile.streaks[streakType];
+        html += '<div class="streak-item">';
+        html += `<div class="streak-label">${streakNames[streakType] || streakType}</div>`;
+        html += `<div class="streak-value">${streak.current}</div>`;
+        html += '</div>';
+      });
+      
+      html += '</div></div>';
+      
+      container.innerHTML = html;
+    }
+    
+    // Load profile on page load
+    loadProfile();
+  </script>
+</body>
+</html>
