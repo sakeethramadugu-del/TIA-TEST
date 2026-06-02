@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Log in - ApexVest</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Log in</h1>
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <label>Username</label>
+      <input name="username" autocomplete="username" required>
+      <label>Password</label>
+      <input name="password" type="password" autocomplete="current-password" required>
+      <div style="margin-top:12px">
+        <button type="submit">Log in</button>
+        <a href="/signup" style="margin-left:10px">Create account</a>
+      </div>
+      <div style="margin-top:16px">
+        <a href="/guest" style="color:#60A5FA">Continue as Guest</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

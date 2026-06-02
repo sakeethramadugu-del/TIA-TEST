@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexVest Academy</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app">
+        <div class="left">
+            <header class="hero-card">
+                <div>
+                    <p class="eyebrow">ApexVest</p>
+                    <h1>Investing for Teens</h1>
+                    <p>Learn investing basics, build a simulated portfolio, and level up with quizzes and lessons.</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="status-pill">Beginner Friendly</div>
+                    {% if session.username %}
+                        <div style="font-size:0.9rem">Hi, {{ session.username }} — <a href="/logout">Logout</a></div>
+                    {% else %}
+                        <div style="font-size:0.9rem"><a href="/login">Log in</a> · <a href="/signup">Sign up</a></div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <section class="stock-card">
+                <div class="stock-top">
+                    <div>
+                        <span class="label">Ticker</span>
+                        <h2 id="ticker">AAPL</h2>
+                        <p id="companyName">Loading company...</p>
+                    </div>
+                    <div class="price-box">
+                        <span class="label">Price</span>
+                        <h2 id="price">$0.00</h2>
+                        <p id="change" class="small-meta">0.00% today</p>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="chart"></canvas>
+                </div>
+                <div class="stock-meta">
+                    <div><span>Open</span> <strong id="open">-</strong></div>
+                    <div><span>High</span> <strong id="high">-</strong></div>
+                    <div><span>Low</span> <strong id="low">-</strong></div>
+                    <div><span>Last update</span> <strong id="quoteTime">Live</strong></div>
+                    <button onclick="addToWatchlistFromUI()" class="watchlist-btn">+ Add to Watchlist</button>
+                </div>
+            </section>
+
+            <!-- Guest Mode Banner -->
+            <div id="guestBanner" class="guest-banner hidden">
+                <span>🎮 Guest Mode Active — Progress will not be saved</span>
+                <button onclick="showGuestConvertModal()" class="guest-upgrade-btn">Save Progress</button>
+            </div>
+
+            <!-- Guest Conversion Modal -->
+            <div id="guestConvertModal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Create Account to Save Progress</h2>
+                    <p>Your guest progress (cash, portfolio, XP) will be transferred to your new account.</p>
+                    <form id="guestConvertForm">
+                        <div class="control-row">
+                            <input type="text" id="convertUsername" placeholder="Username" required>
+                        </div>
+                        <div class="control-row">
+                            <input type="email" id="convertEmail" placeholder="Email" required>
+                        </div>
+                        <div class="control-row">
+                            <input type="password" id="convertPassword" placeholder="Password" required>
+                        </div>
+                        <div class="button-row">
+                            <button type="submit">Create Account</button>
+                            <button type="button" onclick="hideGuestConvertModal()" class="cancel">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="loading-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p>Loading...</p>
+            </div>
+
+            <section class="controls card">
+                <h2>Practice Trading</h2>
+                <div class="control-row">
+                    <select id="stockSelect">
+                        <option value="">Select a stock...</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <input id="tickerInput" placeholder="Ticker" autocomplete="off">
+                    <input id="sharesInput" placeholder="Shares" type="number" min="1">
+                </div>
+                <div class="button-row">
+                    <button onclick="loadStock()">Load Quote</button>
+                    <button class="buy" onclick="buyStock()">Buy</button>
+                    <button class="sell" onclick="sellStock()">Sell</button>
+                </div>
+                <div class="watchlist-row">
+                    <button class="ticker-pill" onclick="loadStock('AAPL')">AAPL</button>
+                    <button class="ticker-pill" onclick="loadStock('MSFT')">MSFT</button>
+                    <button class="ticker-pill" onclick="loadStock('TSLA')">TSLA</button>
+                    <button class="ticker-pill" onclick="loadStock('SPY')">SPY</button>
+                </div>
+                <button class="small-btn reset-btn" onclick="resetGame()">Reset Game</button>
+                <p class="hint">Use the watchlist, then buy and sell to practice without risk.</p>
+            </section>
+
+            <section class="lesson card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Lesson</p>
+                        <h2 id="lessonTitle">Loading lesson...</h2>
+                        <span id="lessonBadge" class="small-meta">Lesson progress</span>
+                    </div>
+                    <button class="small-btn" onclick="nextLesson()">Next lesson</button>
+                </div>
+                <p id="lessonContent">Investing lessons help you understand how money grows over time.</p>
+                <ul id="lessonHighlights" class="lesson-points"></ul>
+                <div id="lessonExample" class="lesson-callout"></div>
+                <div id="lessonChallenge" class="lesson-callout"></div>
+                <p class="lesson-progress" id="lessonProgress">Lesson 1 of 6</p>
+            </section>
+
+            <section class="quiz card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Quiz</p>
+                        <h2 id="question">What is an ETF?</h2>
+                    </div>
+                    <div>
+                        <span id="quizStatus" class="small-meta">Earn cash and XP</span>
+                        <button id="showHintButton" class="small-btn" onclick="showHint()">Hint</button>
+                        <button id="nextQuizButton" class="small-btn hidden" onclick="nextQuizQuestion()">Next question</button>
+                    </div>
+                </div>
+                <div class="quizButtons">
+                    <button onclick="answerQuiz(0)">Option 1</button>
+                    <button onclick="answerQuiz(1)">Option 2</button>
+                    <button onclick="answerQuiz(2)">Option 3</button>
+                </div>
+                <div id="quizHint" class="hint hidden"></div>
+                <div id="quizExplanation" class="quiz-feedback hidden">Choose an answer to test your knowledge.</div>
+                <div id="rewardBanner" class="reward-banner hidden"></div>
+                <div id="quizFeedback" class="quiz-feedback">Choose an answer to test your knowledge.</div>
+            </section>
+
+            <section class="glossary card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Glossary</p>
+                        <h2>Quick terms</h2>
+                    </div>
+                </div>
+                <div class="glossary-grid" id="glossaryGrid"></div>
+            </section>
+
+            <section class="daily-challenges card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Daily Challenges</p>
+                        <h2>Today's Goals</h2>
+                    </div>
+                </div>
+                <div id="dailyChallenges" class="challenges-list">
+                    <p class="small-meta">Loading challenges...</p>
+                </div>
+            </section>
+
+            <section class="streaks card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Streaks</p>
+                        <h2>Your Streaks</h2>
+                    </div>
+                </div>
+                <div id="streaks" class="streaks-list">
+                    <p class="small-meta">Loading streaks...</p>
+                </div>
+            </section>
+
+            <section class="watchlist card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Watchlist</p>
+                        <h2>Your Watchlist</h2>
+                    </div>
+                </div>
+                <div id="watchlist" class="watchlist-list">
+                    <p class="small-meta">Loading watchlist...</p>
+                </div>
+            </section>
+
+            <section class="market-news card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Market News</p>
+                        <h2>Latest Updates</h2>
+                    </div>
+                </div>
+                <div id="marketNews" class="news-list">
+                    <p class="small-meta">Loading news...</p>
+                </div>
+            </section>
+
+            <section class="portfolio-analytics card">
+                <div class="section-header">
+                    <div>
+                        <p class="eyebrow">Analytics</p>
+                        <h2>Portfolio Analytics</h2>
+                    </div>
+                </div>
+                <div id="portfolioAnalytics" class="analytics-content">
+                    <p class="small-meta">Loading analytics...</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="right">
+            <div class="card stats-card">
+                <h3>Cash Balance</h3>
+                <h1 id="cash">$10,000.00</h1>
+            </div>
+            <div class="card stats-card">
+                <h3>Portfolio Value</h3>
+                <h1 id="portfolioValue">$10,000.00</h1>
+                <p id="portfolioChange" class="small-meta">0.00% change</p>
+            </div>
+            <div class="card stats-card">
+                <h3>Profit / Loss</h3>
+                <h1 id="profit">$0.00</h1>
+                <p id="profitPercent" class="small-meta">0.00%</p>
+                <p id="profitNote" class="small-meta">Starting from $10,000</p>
+            </div>
+            <div class="card stats-card">
+                <h3>XP & Level</h3>
+                <h1 id="xp">0 XP</h1>
+                <p id="level" class="small-meta">Level 1</p>
+                <div class="xp-progress-bar">
+                    <div id="xpProgress" class="xp-progress-fill"></div>
+                </div>
+                <p class="small-meta" id="xpToNext">0 / 100 XP to next level</p>
+            </div>
+            <div class="card stats-card">
+                <h3>Quiz Score</h3>
+                <h1 id="quizScore">0 / 0</h1>
+                <p id="quizStreak" class="small-meta">Current quiz streak: 0</p>
+            </div>
+            <div class="card stats-card">
+                <h3>Lesson Streak</h3>
+                <h1 id="lessonStreak">0</h1>
+                <p id="bestLessonStreak" class="small-meta">Best streak: 0</p>
+            </div>
+            <div class="card stats-card">
+                <h3>Quick Links</h3>
+                <a href="/leaderboard" class="quick-link">🏆 Leaderboard</a>
+                <a href="/profile" class="quick-link">👤 Profile</a>
+                <a href="/settings" class="quick-link">⚙️ Settings</a>
+            </div>
+            <div class="card goal-card">
+                <h3>Goal</h3>
+                <p id="goalDescription">Reach $15,000 total assets and earn bonus XP.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="goalProgress"></div>
+                </div>
+                <p id="goalText" class="small-meta">0 / 15,000</p>
+            </div>
+            <div class="card holdings-card">
+                <h3>Holdings</h3>
+                <div id="portfolio">No holdings yet</div>
+            </div>
+            <div class="card library-card">
+                <h3>Lesson Library</h3>
+                <div id="lessonLibrary" class="library-list">Loading lessons...</div>
+            </div>
+            <div class="card library-card">
+                <h3>Quiz Library</h3>
+                <div id="quizLibrary" class="library-list">Loading questions...</div>
+            </div>
+            <div class="card activity-card">
+                <h3>Recent Activity</h3>
+                <div id="activityLog">No activity yet</div>
+            </div>
+            <div class="card history-card">
+                <h3>Trade History</h3>
+                <div id="tradeHistory">No trades yet</div>
+            </div>
+            <div class="card tip-card">
+                <h3>Pro Tip</h3>
+                <p id="investmentTip">Learn how diversification helps reduce risk.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/main.js"></script>
+</body>
+
+</html>
